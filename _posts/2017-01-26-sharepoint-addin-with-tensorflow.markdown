@@ -140,21 +140,45 @@ The mount command might need to be run every time you restart the VM. With the a
 
 ![share-folder.png](/images/2017-01-26/share-folder.png)
 
+From a terminal window run the below to fire up our web API which runs in Kestrel:
+
+```
+$ cd publish
+$ dotnet exec ./WhatsInsideImageApi.dll
+```
+
+![web-api-running.png](/images/2017-01-26/web-api-running.png)
+The console shows that the aplication is running and can be accessed on `http://localhost:5000`. So fireup a browser and put `http://localhost:5000/api/describe` in the address bar to verify that the basic infrastructure works fine.
+
+This is just a test endpoint that will echo current working direcotry plus current date
+```
+// GET api/describe
+[HttpGet]
+public IEnumerable<string> Get()
+{
+    var webRootPath = _hostingEnvironment.ContentRootPath;
+    return new[] { webRootPath, DateTime.Now.ToString(CultureInfo.InvariantCulture) };
+}
+```
+The expected output should be:
+
+![test-endpoint.png](/images/2017-01-26/test-endpoint.png)
 
 
 
+### Other ideas/ Troubleshooting tips
 
-
-
-
-
-### Other ideas
-The solution implemented is very simplistic to have something running quickly. Actually for TensorFlow, the production way of doing predictions is to use something called TensorFlow Serving but this would be too much for the first adventure. Also we can use SharePoint remote event receivers to automate the process or maybe allow the user to edit the description to correct/enrich it.
-
+- The solution implemented is very simplistic to have something running quickly. Actually for TensorFlow, the production way of doing predictions is to use something called TensorFlow Serving but this would be too much for the first adventure. Also we can use SharePoint remote event receivers to automate the process or maybe allow the user to edit the description to correct/enrich it.
+- After deplying Web API app, the .sh file might need to be updated with run permissions.
+- To test from SharePoint picture library page we need to open chrome with mixed content allowed otherwise we will need to configure SSL with nginx.
+Chrome can be opened to allow mixed content by running:
+`"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe" --allow-running-insecure-content`
+- Web API project has also to be configured to allow CORS calls and currently it is accepting all domains, have a look on source code if you would like to limit it to certain domains. Without this CORS configuration, AJAX calls from browsers/user agents will not be able to access it.
+- When testing keep fiddler running to check stuff like CORS/Firewall Access/Mixed Content/Network calls
 
 ### Resources
 
-- Deep Learning free course by Google : https://www.udacity.com/course/deep-learning--ud730
-- im2txt model :  https://github.com/tensorflow/models/tree/master/im2txt
-- hints about how to use pretrained models : https://github.com/tensorflow/models/issues/466
+- [Deep Learning free course by Google](https://www.udacity.com/course/deep-learning--ud730)
+- [im2txt model](https://github.com/tensorflow/models/tree/master/im2txt)
+- [Hints about how to use pretrained models](https://github.com/tensorflow/models/issues/466)
 - 

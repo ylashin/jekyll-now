@@ -34,7 +34,9 @@ Prerequisites:
 
 - Windows 10 64bit
 - VirtualBox
-- Vs 2015 with Update3 + [.net core tools](https://go.microsoft.com/fwlink/?LinkID=827546) + [Office Developer tools](https://www.visualstudio.com/vs/office-tools/)
+- Vs 2015 with Update 3 (always open it **as Administrator**)
+- [.net core tools](https://go.microsoft.com/fwlink/?LinkID=827546) 
+- [Office Developer tools](https://www.visualstudio.com/vs/office-tools/)
 - SharePoint team site (onprem 2013/2016 or simply Office 365 trial/dev tenant)
 
 
@@ -44,7 +46,7 @@ Download Ubuntu 16.04 **64bit** and install it in a new VM using VirtualBox or y
 
 Once Ubuntu is installed, insert Guest Additions CD from Device menu of VirtualBox. You do not have to have any CD, VirtualBox will inject some ISO file and you will get a propmt to install VM guest additions. Restart the VM after this installation.
 
-![install-guest-additions](../images/2017-01-26/install-guest-additions.png)
+![install-guest-additions](/images/2017-01-26/install-guest-additions.png)
 
 ### 2 - Install TensorFlow inside Ubuntu VM
 
@@ -70,7 +72,7 @@ $ python
 
 You should get something like:
 
-![tensorflow-verify.png](../images/2017-01-26/tensorflow-verify.png)
+![tensorflow-verify](/images/2017-01-26/tensorflow-verify.png)
 
 
 ### 3 - Install .NET Core
@@ -84,8 +86,13 @@ $ sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 417A089
 $ sudo apt-get update
 $ sudo apt-get install dotnet-dev-1.0.0-preview2.1-003177
 ```
-sudo apt-get update
-sudo apt-get install apt-transport-https
+
+Once installed you can also verify the sanity of the installation by running:
+
+```
+$ dotnet --version
+```
+![dotnet-core-installed](/images/2017-01-26/dotnet-core-installed)
 
 
 

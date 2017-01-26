@@ -1,5 +1,5 @@
 ---
-title:  "SharePoint meets TensorFlow!"
+title:  "SharePoint meets TensorFlow"
 date:   2017-01-26 10:00:00
 categories: [TensorFlow,SharePoint,.net core]
 tags: [TensorFlow,SharePoint,.net core]
@@ -34,7 +34,7 @@ Prerequisites:
 
 - Windows 10 64bit
 - VirtualBox
-- Vs 2015 with Update 3 (always open it **as Administrator**)
+- Vs 2015 with Update 3
 - [.net core tools](https://go.microsoft.com/fwlink/?LinkID=827546) 
 - [Office Developer tools](https://www.visualstudio.com/vs/office-tools/)
 - SharePoint team site (onprem 2013/2016 or simply Office 365 trial/dev tenant)
@@ -92,26 +92,69 @@ Once installed you can also verify the sanity of the installation by running:
 ```
 $ dotnet --version
 ```
-![dotnet-core-installed](/images/2017-01-26/dotnet-core-installed)
+![dotnet-core-installed](/images/2017-01-26/dotnet-core-installed.png)
+
+
+### 4 - Clone and build VS solution
+
+I have shared a Visual Studio solution containing the following projects:
+
+- A SharePoint addin that acts as a front end to consume Web API 
+- A .net core Web API project to call TensorFlow to call into the image 2 text model.
+
+First clone that repo locally on the Windows machine (host) as we will need to build the solution
+
+```
+git clone https://github.com/ylashin/WhatsInsideImage.git
+```
+
+Once cloned, open solution file `WhatsInsideImage.sln` using Visual Studio but make sure to open Visual Studio as administrator.
+
+Then open a command prompt and move to the Web API project to run the below:
+
+```
+dotnet restore
+dotnet build -r ubuntu.16.04-x64
+dotnet publish -c release -r ubuntu.16.04-x64
+```
+
+This will build and publish a standalone copy of the web API project that can be run on Ubuntu.
+
+![dotnet-core-publish.png](/images/2017-01-26/dotnet-core-publish.png)
+
+We need to copy the contents of the above highlighted publish folder inside the VM. Another way to simplify that in case we are doing lots of code changes and do not want to do too manual steps is to map that publish folder to a shared folder that can be accessed inside the VM.
+
+So I will first open VM settings in VirtualBox and add a shared folder named `publish` to the target publish folder.
+
+![shared-folder.png](/images/2017-01-26/shared-folder.png)
+
+Inside the virtual machine open a terminal and run the below to mount this share to a local folder inside the VM
+
+```
+mkdir ~/publish
+sudo mount -t vboxsf publish ~/publish
+
+```
+The mount command might need to be run every time you restart the VM. With the above you should have a local folder *~/publish* that contains published .net core files for our web API, so let us test it and verfiy some hello world thing first.
+
+
+![share-folder.png](/images/2017-01-26/share-folder.png)
 
 
 
 
 
-
-
-===============================================================================
-
-Then we will need to create a Share named my-share in VM settings and register it in
-the VM as below pointing to a local folder inside the VM also.
-We will use this folder to copy published files for .net core web API.
-To simplify development and testing, The share folder on the host was actually the publish target folder of .NET web API application.
-
-mkdir ~/host-share
-sudo mount -t vboxsf my-share ~/host-share # this might need to be registered to run with every restart
 
 
 
 
 ### Other ideas
 The solution implemented is very simplistic to have something running quickly. Actually for TensorFlow, the production way of doing predictions is to use something called TensorFlow Serving but this would be too much for the first adventure. Also we can use SharePoint remote event receivers to automate the process or maybe allow the user to edit the description to correct/enrich it.
+
+
+### Resources
+
+- Deep Learning free course by Google : https://www.udacity.com/course/deep-learning--ud730
+- im2txt model :  https://github.com/tensorflow/models/tree/master/im2txt
+- hints about how to use pretrained models : https://github.com/tensorflow/models/issues/466
+- 

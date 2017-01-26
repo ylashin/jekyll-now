@@ -32,7 +32,6 @@ Enough chit-chat, let's get our hands dirty.
 
 Prerequisites:
 
-
 - Windows 10 64bit
 - VirtualBox
 - Vs 2015 with Update3 + [.net core tools](https://go.microsoft.com/fwlink/?LinkID=827546) + [Office Developer tools](https://www.visualstudio.com/vs/office-tools/)
@@ -43,9 +42,58 @@ Prerequisites:
 
 Download Ubuntu 16.04 **64bit** and install it in a new VM using VirtualBox or your prefered VM tool.There will be some steps later about port forwarding and stuff like that so I prefer if we can stick to VirtualBox to follow same steps. Also I will work in a hybrid approach manner currently. Meaning, I will have the VM locally on my laptop (not in Azure) but will work with an Office 365 SharePoint site as I will be browsing the site locally on my laptop then the browser can do XHR calls to my VM. Also, remember to give the VM enough CPU/memory power as the default settings with VirtualBox starts with single CPU and things like that.To make the below steps easy to use, name the machine tensorflow both in VirtualBox and in Ubunto setup.
 
-Once Ubuntu is installed, insert Guest Additions CD from Device menu of VirtualBox.
-You do not have to have any CD, VirtualBox will inject some ISO file and you will get a propmt to install VM guest additions.
-Restart the VM after this installation.
+Once Ubuntu is installed, insert Guest Additions CD from Device menu of VirtualBox. You do not have to have any CD, VirtualBox will inject some ISO file and you will get a propmt to install VM guest additions. Restart the VM after this installation.
+
+![install-guest-additions](../images/2017-01-26/install-guest-additions.png)
+
+### 2 - Install TensorFlow inside Ubuntu VM
+
+Open a bash terminal window and run the below commands:
+
+```
+$ sudo apt-get install python-pip python-dev
+$ pip install tensorflow
+```
+
+Once the above is complete, you can test TensorFlow installation by running the below script in bash terminal :
+
+```
+$ python
+>>> import tensorflow as tf
+>>> a = tf.constant(10)
+>>> b = tf.constant(32)
+>>> sess = tf.Session() 
+>>> print(sess.run(a + b))
+>>> quit()
+
+```
+
+You should get something like:
+
+![tensorflow-verify.png](../images/2017-01-26/tensorflow-verify.png)
+
+
+### 3 - Install .NET Core
+
+In a new bash terminal run the below commands to install .net core on ubuntu. The full instructions are documented [here](https://www.microsoft.com/net/core#linuxubuntu)
+
+
+```
+$ sudo sh -c 'echo "deb [arch=amd64] https://apt-mo.trafficmanager.net/repos/dotnet-release/ xenial main" > /etc/apt/sources.list.d/dotnetdev.list'
+$ sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 417A0893
+$ sudo apt-get update
+$ sudo apt-get install dotnet-dev-1.0.0-preview2.1-003177
+```
+sudo apt-get update
+sudo apt-get install apt-transport-https
+
+
+
+
+
+
+
+===============================================================================
 
 Then we will need to create a Share named my-share in VM settings and register it in
 the VM as below pointing to a local folder inside the VM also.

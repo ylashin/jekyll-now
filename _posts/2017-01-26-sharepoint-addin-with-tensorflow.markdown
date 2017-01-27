@@ -340,17 +340,14 @@ We should see something like :
 
 ### 8: Create SharePoint team site
 
-Now we are approaching our final objective, we need to have some SharePoint team site with a picture library. I will assume that you have an Office 365 E3 trial tenant although any local 2013/2016 deployment will also do the job. I wil open O365 SharePoint admin page and create a new site collection with **Developer** template which will allow us to deploy diretly from Visual Studio to a SharePoint site.
+Now we are approaching our final objective, we need to have some SharePoint team site with a picture library. I will assume that you have an Office 365 E3 trial tenant although any local 2013/2016 deployment will also do the job. I wil open O365 SharePoint admin page and create a new site collection with **Developer** template which will allow us to deploy directly from Visual Studio to a SharePoint site without the need to enable a side loading feature.
 
 ![team-site](/images/2017-01-26/team-site.png)
 
-Then once the site is created we can navigate to it and create a new picture library as below then darg and drop a few images in the new library.
+Then once the site is created we can navigate to it and create a new picture library named `My Pictures` as below then darg and drop a few images in the new library.
+The library name is important as it is used from some javascript code to update picture description. I also added a new site column of type text to this library named `Caption`. This column will hold the new predicted caption of the image.
 
 ![add-picture-library.png](/images/2017-01-26/add-picture-library.png)
-
-Also we need to add a new text column to the library to store the descriptions/captions.
-
-![add-desc-column.png](/images/2017-01-26/add-desc-column.png)
 
 Then open `WhatsInsideImage` in Visual Studio if it is not open already. Select the SharePoint addin project in solution explorer and bring up the properties pane. Change site URL to your newly created site and `Server Conection` from Offline to Online. You will be propmted to enter the credentials used to connect to that site.
 
@@ -454,28 +451,48 @@ Captions for image filename.jpg:
 */
 if (output.Contains("Captions for image"))
 {
-var lines = output
-    .Split(Environment.NewLine[0])
-    .Skip(1)
-    .Select(a => a.Trim())
-    .Select(a => a.Substring(3))
-    .Select(a => a.Substring(0, a.IndexOf("(p", StringComparison.OrdinalIgnoreCase)).Trim());
-return Ok(lines);
+    output = output.Substring(output.IndexOf("Captions for image"));
+    var lines = output
+        .Split(Environment.NewLine[0])
+        .Skip(1)
+        .Select(a => a.Trim())
+        .Where(a => a.Length > 3 && a.Contains("(p="))
+        .Select(a => a.Substring(3))
+        .Select(a => a.Substring(0, a.IndexOf("(p=", StringComparison.OrdinalIgnoreCase)).Trim())
+        .ToArray();
+    return Ok(lines);
 }
-return BadRequest("Cannot predict image description" + Environment.NewLine +
-output);
+return BadRequest("Cannot predict image description" + Environment.NewLine +  output);
 ```
 
 One extra hint, if we are doing the test from our Office 365 SharePoint site which is hosted over HTTPS then we cannot call into an API hosted over HTTP as the browser will be blocking the call due to mixed content. If you still want to try it with such mix, you can open Chrome instructing it to ignore mixed contents like below:
 
 `"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe" --allow-running-insecure-content`
+
 Another option is to add SSL to nginx if you would like to.
 
 Then comes an extra peice of SharePoint functionality to show the expected descriptions in a dropdown list, allow the user to select one of them and click a button to update the description column of that image with the selected text.
 
 
-### 9: Deploying and testing our SharePoint solution
+### 9: When the rubber hits the road..
 
+For now we have SharePoint adding deployed to Office 365 developer site that contains a picture library with a few pictures uploaded. Also we have our VM running web API that can interact with TensorFlow and do predictions on a ready-made model. So let's have a look on how things fit together.
+
+- Open Chrome as mentioned above to ignore mixed content checks.
+- Navigate to your picture library.
+- Select one of the pictures and notice the ribbon will have a new button called `Get Caption`
+
+![ribbon-button.png](/images/2017-01-26/ribbon-button.png)
+- Click on Get Caption button to open or navigate to the addin page
+- You will get a new page with the image and a button named `Describe Image`, click it.
+![options.png](/images/2017-01-26/options.png) 
+- You will get some descriptions appearing in a dropdown list plus an extra button to apply one of the selected descriptions
+- Select one of the descriptions and click apply, then a success message will be shown. Dismiss the message and click on the link in the top left menu bar to navigate back to the site containing the library.
+![applied.png](/images/2017-01-26/applied.png) 
+- Go back to the picture library and click the image we just captioned to open it in the viewer mode and click the litte info button in the top right. You should see the selected description copied into the Caption field of the image.
+![captioned.png](/images/2017-01-26/captioned.png)
+- Now if you wait a few minutes and search for one of the keywords of the caption selected for that image, you should get the image back as part of the search result even if the image file name does not contain the keyword. We have successfully created image searchable metadata using TensorFlow.
+![search.png](/images/2017-01-26/search.png)
 
 
 

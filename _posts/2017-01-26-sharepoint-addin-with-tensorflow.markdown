@@ -20,7 +20,9 @@ So why do not we just use Azure ML or cognitive services vision API:
 ### Problem Description
 I like SharePoint search feature for office/pdf documents. You can just dump all your documents and then use search to spot the information you need. For other types of documents you need to add more metadata to the lists/libraries hosting them so that you can find/order them. So our problem is to extend SharePoint picture library to store some metadata (description/caption) for stored images. This can be ideally a SharePoint event receiver that will listen for new images created in the library and add the predicted description to them automatically. I will implement a slightly different solution. We will have a SharePoint addin that will add and extra button to the ribbon to open a popup window. In this window, the current image selected will be shown and by clicking a button we will call a .net core web API hosted in an Ubuntu VM which will use bash to call TensorFlow model and come back with a few expected descriptions. The user will have the option to pick one of them and apply it to a description column in the current picture library.
 
+If you would like to have a sneak peek on the final outcome, it should be as follows:
 
+![captioning.gif](/images/2017-01-26/captioning.gif)
 
 ### Design
 

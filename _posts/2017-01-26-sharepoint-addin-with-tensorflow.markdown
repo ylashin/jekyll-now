@@ -26,7 +26,7 @@ If you would like to have a sneak peek on the final outcome, it should be as fol
 
 ### Design
 
-High level design of this POC is to have a SharePoint addin calling ASP.NET core web API hosted in Ubuntu VM. The VM will have also TensorFlow installed and that ASP.NET web API will call TensorFlow to predict the image expected description. The POC is very simplistic as we will not secure the web API or use TensorFlow Serving for doing predictions (more suitable for production scenarios). Final result can be used for on premises deployment or in Office 365. If used in Office 365, then we will need to have an Ubuntu VM somewhere like in Azure or AWS to make it accessible on the internet.
+High level design of this POC is to have a SharePoint addin calling ASP.NET core web API hosted in an Ubuntu VM. The VM will have also TensorFlow installed and that ASP.NET web API will call TensorFlow to predict the image expected description. The POC is very simplistic as we will not secure the web API or use TensorFlow Serving for doing predictions (more suitable for production scenarios). Final result can be used for on premises deployment or in Office 365. If used in Office 365, then we will need to have an Ubuntu VM somewhere like in Azure or AWS to make it accessible on the internet.
 
 
 Enough chitchat, let's get our hands dirty.
@@ -35,17 +35,19 @@ Prerequisites:
 
 - Windows 10 64bit
 - VirtualBox
-- Vs 2015 with Update 3
+- VS 2015 with Update 3
 - [.net core tools](https://go.microsoft.com/fwlink/?LinkID=827546) 
 - [Office Developer tools](https://www.visualstudio.com/vs/office-tools/)
-- SharePoint team site (onprem 2013/2016 or simply Office 365 trial/dev tenant)
+- SharePoint developer site (onprem 2013/2016 or simply Office 365 trial/dev tenant)
 
 
 ### 1- Create VM to host API & TensorFlow
 
-Download Ubuntu **16.04 64bit** and install it in a new VM using VirtualBox or your prefered VM tool.There will be some steps later about port forwarding and stuff like that so I prefer if we can stick to VirtualBox to follow same steps. Also I will work in a hybrid approach manner currently. Meaning, I will have the VM locally on my laptop (not in Azure) but will work with an Office 365 SharePoint site as I will be browsing the site locally on my laptop then the browser can do XHR calls to my VM. Also, remember to give the VM enough CPU/memory power as the default settings with VirtualBox starts with single CPU and things like that.To make the below steps easy to use, name the machine tensorflow both in VirtualBox and in Ubunto setup.
+Download Ubuntu **16.04 64bit** and install it in a new VM using VirtualBox or your prefered VM tool. There will be some steps later about port forwarding and stuff like that so I prefer if we can stick to VirtualBox to follow same steps. Also I will work in a hybrid approach. Meaning, I will have the VM locally on my laptop (not in Azure) but will work with an Office 365 SharePoint site as I will be browsing the site locally on my laptop then the browser can do XHR calls to my VM. Also, remember to give the VM enough CPU/memory power as the default settings with VirtualBox starts with single CPU and things like that. To make the below steps easy to use, name the machine tensorflow both in VirtualBox and in Ubunto setup and make the user login name `super`.
 
-Once Ubuntu is installed, insert Guest Additions CD from Device menu of VirtualBox. You do not have to have any CD, VirtualBox will inject some ISO file and you will get a propmt to install VM guest additions. Restart the VM after this installation.
+![ubuntu-setup.png](/images/2017-01-26/ubuntu-setup.png)
+
+Once Ubuntu is installed, insert Guest Additions CD from Device menu of VirtualBox. You do not have to have any CD, VirtualBox will inject some ISO file and you will get a prompt to install VM guest additions. Restart the VM after this installation.
 
 ![install-guest-additions](/images/2017-01-26/install-guest-additions.png)
 
@@ -98,7 +100,7 @@ $ dotnet --version
 
 ### 4 - Clone and build VS solution
 
-I have shared a Visual Studio solution containing the following projects:
+I have shared a [Visual Studio solution](https://github.com/ylashin/WhatsInsideImage) containing the following projects:
 
 - A SharePoint addin that acts as a front end to consume Web API 
 - A .net core Web API project to call TensorFlow to call into the image 2 text model.
@@ -502,6 +504,7 @@ For now we have SharePoint adding deployed to Office 365 developer site that con
 
 ### Other ideas/ Troubleshooting tips
 
+- It seems that the inference script built using bazel only supports JPG files. I tried with some PNG but it did not work. This is just a guess but could be easily verified and worst case images could be converted before calling the final prediction endpoint. There are even some libraries to do that on the client side.
 - The solution implemented is very simplistic to have something running quickly. Actually for TensorFlow, the production way of doing predictions is to use something called TensorFlow Serving but this would be too much for the first adventure. Also we can use SharePoint remote event receivers to automate the process or maybe allow the user to edit the description to correct/enrich it.
 - After deplying Web API app, the .sh file might need to be updated with run permissions.
 - Web API project has also to be configured to allow CORS calls and currently it is accepting all domains, have a look on source code if you would like to limit it to certain domains. Without this CORS configuration, AJAX calls from browsers/user agents will not be able to access it.

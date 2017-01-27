@@ -30,8 +30,6 @@ If you would like to have a sneak peek on the final outcome, it should be as fol
 </div>
 
 
-![captioning.gif](/images/2017-01-26/captioning.gif)
-
 ### Design
 
 High level design of this POC is to have a SharePoint addin calling ASP.NET core web API hosted in an Ubuntu VM. The VM will have also TensorFlow installed and that ASP.NET web API will call TensorFlow to predict the image expected description. The POC is very simplistic as we will not secure the web API or use TensorFlow Serving for doing predictions (more suitable for production scenarios). Final result can be used for on premises deployment or in Office 365. If used in Office 365, then we will need to have an Ubuntu VM somewhere like in Azure or AWS to make it accessible on the internet.

@@ -22,6 +22,14 @@ I like SharePoint search feature for office/pdf documents. You can just dump all
 
 If you would like to have a sneak peek on the final outcome, it should be as follows:
 
+
+<div>
+ <video width="480" height="360" controls preload="true">
+  <source src="/images/2017-01-26/caption.mp4" >  
+ </video>
+</div>
+
+
 ![captioning.gif](/images/2017-01-26/captioning.gif)
 
 ### Design

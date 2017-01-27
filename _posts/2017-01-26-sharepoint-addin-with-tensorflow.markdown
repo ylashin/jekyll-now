@@ -517,6 +517,8 @@ For now we have SharePoint addin deployed to Office 365 developer site that cont
 ![search.png](/images/2017-01-26/search.png)
 
 
+[<img src="/images/2017-01-26/search.png">](/images/2017-01-26/search.png)
+
 ### Other ideas/ Troubleshooting tips
 
 - It seems that the inference script built using bazel only supports JPG files. I tried with some PNG but it did not work. This is just a guess but could be easily verified and worst case images could be converted before calling the final prediction endpoint. There are even some libraries to do that on the client side.

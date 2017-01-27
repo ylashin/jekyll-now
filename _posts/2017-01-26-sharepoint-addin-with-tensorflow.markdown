@@ -103,7 +103,7 @@ $ dotnet --version
 I have shared a [Visual Studio solution](https://github.com/ylashin/WhatsInsideImage) containing the following projects:
 
 - A SharePoint addin that acts as a front end to consume Web API 
-- A .net core Web API project to call TensorFlow to call into the image 2 text model.
+- A .net core Web API project to call TensorFlow model called **im2txt**.
 
 First clone that repo locally on the Windows machine (host) as we will need to build the solution
 
@@ -113,7 +113,7 @@ git clone https://github.com/ylashin/WhatsInsideImage.git
 
 Once cloned, open solution file `WhatsInsideImage.sln` using Visual Studio but make sure to open Visual Studio as administrator.
 
-Then open a command prompt and move to the Web API project to run the below:
+Then open a command prompt and move to the Web API project folder to run the below:
 
 ```
 dotnet restore
@@ -125,7 +125,7 @@ This will build and publish a standalone copy of the web API project that can be
 
 ![dotnet-core-publish.png](/images/2017-01-26/dotnet-core-publish.png)
 
-We need to copy the contents of the above highlighted publish folder inside the VM. Another way to simplify that in case we are doing lots of code changes and do not want to do too manual steps is to map that publish folder to a shared folder that can be accessed inside the VM.
+We need to copy the contents of the above highlighted publish folder inside the VM. Another way to simplify that in case we are doing lots of code changes and do not want to do too many manual steps is to map that publish folder to a shared folder that can be accessed inside the VM.
 
 So I will first open VM settings in VirtualBox and add a shared folder named `publish` to the target publish folder.
 
@@ -134,11 +134,11 @@ So I will first open VM settings in VirtualBox and add a shared folder named `pu
 Inside the virtual machine open a terminal and run the below to mount this share to a local folder inside the VM
 
 ```
-mkdir ~/publish
-sudo mount -t vboxsf publish ~/publish
+$ mkdir ~/publish
+$ sudo mount -t vboxsf publish ~/publish
 
 ```
-The mount command might need to be run every time you restart the VM. With the above you should have a local folder *~/publish* that contains published .net core files for our web API, so let us test it and verfiy some hello world thing first.
+The mount command might need to be run every time you restart the VM. With the above you should have a local folder **~/publish** that contains published .net core files for our web API, so let us test it and verfiy some hello world thing first.
 
 
 ![share-folder.png](/images/2017-01-26/share-folder.png)
@@ -151,7 +151,7 @@ $ dotnet exec ./WhatsInsideImageApi.dll
 ```
 
 ![web-api-running.png](/images/2017-01-26/web-api-running.png)
-The console shows that the aplication is running and can be accessed on `http://localhost:5000`. So fireup a browser and put `http://localhost:5000/api/describe` in the address bar to verify that the basic infrastructure works fine.
+The console shows that the aplication is running and can be accessed on `http://localhost:5000`. So fire up a browser and put `http://localhost:5000/api/describe` in the address bar to verify that the basic infrastructure works fine.
 
 This is just a test endpoint that will echo current working direcotry plus current date
 
@@ -161,7 +161,11 @@ This is just a test endpoint that will echo current working direcotry plus curre
 public IEnumerable<string> Get()
 {
     var webRootPath = _hostingEnvironment.ContentRootPath;
-    return new[] { webRootPath, DateTime.Now.ToString(CultureInfo.InvariantCulture) };
+    return new[] 
+    { 
+        webRootPath, 
+        DateTime.Now.ToString(CultureInfo.InvariantCulture) 
+    };
 }
 ```
 The expected output should be:
@@ -171,7 +175,7 @@ The expected output should be:
 
 ### 5 - Expose Web API to host machine
 
-Our next steps is to make this API accessible outside the guest VM. We might think of just disabling the firewall inside Ubuntu and we should be good to go, but in most practical cases no one would be using Kestrel only as the web server. The defacto standard here is to have ngnix and let it proxy our API in Kestrel.
+Our next steps is to make this API accessible outside the guest VM. We might think of just disabling the firewall inside Ubuntu and we should be good to go, but in most practical cases no one would be using Kestrel only as the web server. The defacto standard here is to have a something like ngnix and let it proxy our API in Kestrel.
 
 Inside the VM, open our friendly terminal to install nginx:
 
@@ -181,13 +185,13 @@ $ sudo service nginx start
 ```
 
 
-We will now configure Nginx as a reverse proxy to forward requests to our ASP.NET application. We will be editing files in /etc folder so we need to run in admin mode 
+We will now configure Nginx as a reverse proxy to forward requests to our ASP.NET application. We will be editing files in **/etc** folder so we need to run in admin mode 
 
 ```
 sudo gedit /etc/nginx/sites-available/default
 ``` 
-This will open nginx config file for default website in gedit editor, then we need to replace the **server** node contents with the following. 
-The 0.0.0.0 means it will listen on any IP or network interface of the VM.
+This will open nginx config file for default website in text editor, then we need to replace the **server** node contents with the following. 
+The **0.0.0.0** means it will listen on any IP or network interface of the VM.
 
 ```
 server {
@@ -221,6 +225,7 @@ $ sudo ufw disable
 
 Also VirtualBox VMs are created with NAT network adapter type by default in which the host cannot access the guest unless port forwarding is configured. So, from VM settings dialog switch to the network tab and then click port forwarding button to create the below rule. When you click OK, it might trigger some Windows Firewall dialog to ask you to open ports needed on VirtualBox network adapter. You should allow this access for sure to have things running.
 
+![port-forward.png](/images/2017-01-26/port-forward.png)
 
 Now if you hit the browser (in your host machine) with `http://localhost:5001/api/describe` you should get the same result but this time through port forwarding --> nginx --> Kestrel.
 
@@ -230,12 +235,12 @@ This has a downside of the IP might be different across diffrent sessions on the
 By default most web servers like IIS & nginx have default configuration with some settings to limit the size of payload they receive with HTTP requests. For our case we need to relax this setting a bit as we will be hitting web API with image binary contents.
 
 
-In order to fix this issue, we need to edit nginx.conf file similar to waht we did with the default site config file.
+In order to fix this issue, we need to edit **nginx.conf** file similar to waht we did with the default site config file.
 
 ```
 $ sudo gedit /etc/nginx/nginx.conf
 ```
-Search for this variable: **client_max_body_size**. If you find it, just incrmodify its value to 10M, for example. If it doesn’t exist, then you can add it inside and at the end of **http** { … } block.
+Search for this variable: **client_max_body_size**. If you find it, just modify its value to 20M, for example. If it doesn’t exist, then you can add it before the end of **http** { … } block.
 
 `client_max_body_size 20M;`
 
@@ -247,7 +252,7 @@ $ sudo nginx -s reload
 ```
 
 
-### 6 : Install prerequisites for running IM2TXT model
+### 6 : Install prerequisites for running im2txt model
 
 First let us have some history background about TensorFlow, the below from Wikipedia shows what TensorFlow is :
 
@@ -257,11 +262,11 @@ First let us have some history background about TensorFlow, the below from Wikip
 As I mentioned above, Google and the community have shared some useful models on a github repo called [TensorFlow Models](https://github.com/tensorflow/models).
 One of those models is called **im2txt** which takes an image as input and returns a few expected descriptions as output, simple enough!
 
-Unfortunately those shared models are untrained neural network definition. Some nice guys volunteered to do the training  and share the final model with the tuned parameters, you can find more details about that in : [Hints about how to use pretrained models](https://github.com/tensorflow/models/issues/466)
+Unfortunately those shared models are untrained neural network definitions. Some nice guys volunteered to do the training  and share the final model with the tuned parameters, you can find more details about that in : [issue #466](https://github.com/tensorflow/models/issues/466)
 
-So we wil just use some pretrained model from that issue #466 plus the original instructions from [im2txt page](https://github.com/tensorflow/models/tree/master/im2txt) to first prepare the model and run it from the shell before consuming it from web API.
+So we will just use some pretrained model mentioned in that issue #466 plus the original instructions from [im2txt page](https://github.com/tensorflow/models/tree/master/im2txt#generating-captions) to first prepare the model and run it from the shell before consuming it from web API.
 
-We need to install JDK as it is required for Bazel which is Google build tool, so again the the terminal we run:
+We need to install JDK as it is required for Bazel which is Google build tool, so again in the terminal we run:
 	
 ```
 $ sudo add-apt-repository ppa:webupd8team/java

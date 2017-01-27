@@ -252,7 +252,7 @@ First let us have some history background about TensorFlow, the below from Wikip
 
 
 As I mentioned above, Google and the community have shared some useful models on a github repo called [TensorFlow Models](https://github.com/tensorflow/models).
-One of those models is called im2txt which takes an image as input and returns a few expected descriptions as output, simple enough!
+One of those models is called **im2txt** which takes an image as input and returns a few expected descriptions as output, simple enough!
 
 Unfortunately those shared models are untrained neural network definition. Some nice guys volunteered to do the training  and share the final model with the tuned parameters, you can find more details about that in : [Hints about how to use pretrained models](https://github.com/tensorflow/models/issues/466)
 
@@ -304,6 +304,7 @@ The last line is to reset our repo HEAD to a certain commit as there are some re
 
 
 ### 7: Prepare TensorFlow model for prediction
+
 In this step we will be following the [Generating Captions](https://github.com/tensorflow/models/tree/master/im2txt#generating-captions) section of the im2txt page and also the comment by siavashk on 16/11/2016 for issue #466.
 
 So we will start by all files to be used for the prediction Final files are stored on Google Drive as per siavashk comment but I also uploaded them to code repo related with this post to be able to grab them easily without the risk of files removed from Google Drive or something. I also updated the vocabulary text file to remove some unneeded quotes as per the [comment from @cshallue on Oct 16, 2016](https://github.com/tensorflow/models/issues/466). You do not need to do anything of the above all files are shared and ready to be used directly.
@@ -312,10 +313,14 @@ So we will start by all files to be used for the prediction Final files are stor
 $ cd ~
 $ mkdir model-data
 $ cd model-data
-$ wget graph.pbtxt
-$ wget model.ckpt-2000000
-$ wget model.ckpt-2000000.meta
-$ wget word_counts.txt
+$ wget https://github.com/ylashin/WhatsInsideImage/blob/master/trained-model/graph.pbtxt?raw=true
+$ wget https://github.com/ylashin/WhatsInsideImage/blob/master/trained-model/model.ckpt-2000000?raw=true 
+$ wget https://github.com/ylashin/WhatsInsideImage/blob/master/trained-model/model.ckpt-2000000.meta?raw=true  
+$ wget https://github.com/ylashin/WhatsInsideImage/blob/master/trained-model/word_counts.txt?raw=true  
+$ mv graph.pbtxt?raw=true graph.pbtxt
+$ mv model.ckpt-2000000?raw=true model.ckpt-2000000
+$ mv model.ckpt-2000000.meta?raw=true model.ckpt-2000000.meta
+$ mv word_counts.txt?raw=true  word_counts.txt
 $ wget http://www.horsebreedsinfo.com/images/fast_horse_riding.jpg
 
 ```
@@ -333,6 +338,145 @@ We should see something like :
 
 ![sample-predition.png](/images/2017-01-26/sample-predition.png)
 
+### 8: Create SharePoint team site
+
+Now we are approaching our final objective, we need to have some SharePoint team site with a picture library. I will assume that you have an Office 365 E3 trial tenant although any local 2013/2016 deployment will also do the job. I wil open O365 SharePoint admin page and create a new site collection with **Developer** template which will allow us to deploy diretly from Visual Studio to a SharePoint site.
+
+![team-site](/images/2017-01-26/team-site.png)
+
+Then once the site is created we can navigate to it and create a new picture library as below then darg and drop a few images in the new library.
+
+![add-picture-library.png](/images/2017-01-26/add-picture-library.png)
+
+Also we need to add a new text column to the library to store the descriptions/captions.
+
+![add-desc-column.png](/images/2017-01-26/add-desc-column.png)
+
+Then open `WhatsInsideImage` in Visual Studio if it is not open already. Select the SharePoint addin project in solution explorer and bring up the properties pane. Change site URL to your newly created site and `Server Conection` from Offline to Online. You will be propmted to enter the credentials used to connect to that site.
+
+![server-connection.png](/images/2017-01-26/server-connection.png)
+
+![vs-sp-connect.png](/images/2017-01-26/vs-sp-connect.png)
+
+Next we need to right click SharePoint addin project and select **Deploy** option to deploy it to target site. A browser window will popup to ask user for consent to allow the app to edit stuff in SharePoint as it is supposed to write to list items (our images here) metadata. Once you are happy with the consent, the app will be installed and a default landing page for the app will open. Just return back to the hosting team site from the ribbon as we will use the app from the picture library ribbon.
+
+![deploy-addin.png](/images/2017-01-26/deploy-addin.png)
+
+![consent-page.png](consent-page.png)
+
+In Office 365, we have something called new list experience with an improved ribbon view. On on-prem environments you might get the old experience but the overall effect is the same. Once you select a picture the ribbon will have a new button called `Get Caption`. That SharePoint addin simply add a custom action to the ribbon such that when you select a picture you can open a popup/page to predict description.
+
+![addin-in-ribbon.png](/images/2017-01-26/addin-in-ribbon.png)
+
+Do not use the addin now, we will come to that in a minute after some small piece of explanation.
+
+### 8: Connecting the dots...
+
+So, we did not talk much about how things fit together. Let us have a quick look.
+SharePoint addin is just a bunch of javascript calls to REST endpoint in SharePoint to load image, grab contents and update some metadata. The prediction part is simply a js call into that web API we have in Ubuntu that looks like:
+
+```
+jQuery.ajax({
+    url: "http://localhost:5001/api/describe",
+    data: formData,
+    cache: false,
+    contentType: false,
+    processData: false,
+    type: "POST",
+    success: function (result) {
+        var options = "";
+        for (var i = 0; i < result.length; i++) {
+            options += '<option value="' + result[i] + '">' + result[i] + "</option>";
+        }
+        $("#descriptions").append(options);
+        $("#selections-section").show();
+    }
+});
+```
+Form data is a js object filled with binary data of the image selected. The target POST URL is our web API hosted in Ubuntu. So, if you plan have something more than a POC you need to make that endpoint available to browsers other than your local dev box. MAybe an Aure VM or onprem machine and then you need to update the URL and secure that web service also.
+
+The web API endpoint for doing the prediction starts with defining a POST endpoint.
+
+```
+// POST api/describe + file attachment :)
+[HttpPost]
+public ActionResult DescribeIt()
+```
+
+Next we will grab the file uploaded and save it locally somewhere. We should drop it to a temp folder but I am just dropping it to application folder for simplicty.
+```
+var webRootPath = _hostingEnvironment.ContentRootPath;
+var file = Request.Form.Files.First();
+var targetFile = Path.Combine(webRootPath, file.FileName);
+WriteFile(file, targetFile);
+```
+
+Once we have our file ready on the local file system on the web API VM, all we need to do is to run a bash script from .net code to do the prediction and come back with the expected description.
+
+```
+var command = "sh";
+var myBatchFile = $"{webRootPath}/predictor.sh";
+var args = $"{myBatchFile} {targetFile}";
+
+var processInfo = new ProcessStartInfo
+{
+    UseShellExecute = false,
+    FileName = command,
+    Arguments = args,
+    RedirectStandardOutput = true
+};
+
+var process = Process.Start(processInfo);   
+process.WaitForExit();
+var output = process.StandardOutput.ReadToEnd();
+```
+
+We have a file called `predictor.sh` as part of the web API which is also deployed to the published folder on ubuntu. The file simply contains :
+
+```
+#!/bin/bash
+/home/super/models/im2txt/bazel-bin/im2txt/run_inference --checkpoint_path="/home/super/model-data/model.ckpt-2000000" --vocab_file="/home/super/model-data/word_counts.txt" --input_files=$1
+```
+
+So, just double check your environment paths and user name in case you have different values. This can be generated dynamically or controlled by some config settings but it should be good for our example. It simply does the bash script we did before to do the prediction but this time takes the image path as a parameter. Please also verify that this **.sh** file has execute permissions on the VM just in case.
+
+Then once we have the prediction text from the bash script process we can just do some text parsing and return it as an array of expected descriptions.
+
+```
+/*
+Successful prediction would be : 
+
+Captions for image filename.jpg:
+0) a group of people sitting around a table . (p=0.010212)
+1) a group of people sitting around a table with food . (p=0.001988)
+2) a group of people sitting around a table with a cake . (p=0.000799)
+
+*/
+if (output.Contains("Captions for image"))
+{
+var lines = output
+    .Split(Environment.NewLine[0])
+    .Skip(1)
+    .Select(a => a.Trim())
+    .Select(a => a.Substring(3))
+    .Select(a => a.Substring(0, a.IndexOf("(p", StringComparison.OrdinalIgnoreCase)).Trim());
+return Ok(lines);
+}
+return BadRequest("Cannot predict image description" + Environment.NewLine +
+output);
+```
+
+One extra hint, if we are doing the test from our Office 365 SharePoint site which is hosted over HTTPS then we cannot call into an API hosted over HTTP as the browser will be blocking the call due to mixed content. If you still want to try it with such mix, you can open Chrome instructing it to ignore mixed contents like below:
+
+`"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe" --allow-running-insecure-content`
+Another option is to add SSL to nginx if you would like to.
+
+Then comes an extra peice of SharePoint functionality to show the expected descriptions in a dropdown list, allow the user to select one of them and click a button to update the description column of that image with the selected text.
+
+
+### 9: Deploying and testing our SharePoint solution
+
+
 
 
 
@@ -341,9 +485,6 @@ We should see something like :
 
 - The solution implemented is very simplistic to have something running quickly. Actually for TensorFlow, the production way of doing predictions is to use something called TensorFlow Serving but this would be too much for the first adventure. Also we can use SharePoint remote event receivers to automate the process or maybe allow the user to edit the description to correct/enrich it.
 - After deplying Web API app, the .sh file might need to be updated with run permissions.
-- To test from SharePoint picture library page we need to open chrome with mixed content allowed otherwise we will need to configure SSL with nginx.
-Chrome can be opened to allow mixed content by running:
-`"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe" --allow-running-insecure-content`
 - Web API project has also to be configured to allow CORS calls and currently it is accepting all domains, have a look on source code if you would like to limit it to certain domains. Without this CORS configuration, AJAX calls from browsers/user agents will not be able to access it.
 - When testing keep fiddler running to check stuff like CORS/Firewall Access/Mixed Content/Network calls
 

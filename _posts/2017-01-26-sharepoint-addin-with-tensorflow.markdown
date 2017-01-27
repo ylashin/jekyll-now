@@ -5,10 +5,9 @@ categories: [TensorFlow,SharePoint,.net core]
 tags: [TensorFlow,SharePoint,.net core]
 ---
 
-### Before they met
-I guess many of us have used [How Old website](https://how-old.net/). It was a demo site from Microsoft to showcase Vision APIs as part of cognitive services. Vision API now can also describe the image and provide even more information about the image content such as genders of people in picture if any, classification of racial/adult content and so on. This is all coming from the booming of neural networks deep learning with breakthroughs in the last few years. Deep learning is more targeted for computer vision problems but can be applied to many other domains as well.
+I guess many of us have used [How old do I look?](https://how-old.net/). It was a demo site from Microsoft to showcase Vision APIs as part of cognitive services. Vision API now can also describe the image and provide even more information about the image content such as genders of people in picture if any, classification of racial/adult content and so on. This is all coming from the booming of neural networks & deep learning with breakthroughs in the last few years. Deep learning is more targeted for computer vision problems but can be applied to many other domains as well.
 
-There are many tools to do deep learning ranging from cloud APIs like Microsoft cognitive service and Azure ML to open source frameworks like TensorFlow, Cafee, and Theano. In this post I will consume a ready-made TensorFlow model from a SharePoint addin. I will not develop & train the network from scratch as this is a time consuming process and TensorFlow community already published some models for common practical problems. TensorFlow is a bit hard and verbose and there are nice abstractions that make it more approachable and we still have the option to develop our custom models if needed. But for our case here I would like to stand on the shoulders of some giants and make use of something tested and trained.
+There are many tools to do deep learning ranging from cloud APIs like Microsoft cognitive service and Azure ML to open source frameworks like TensorFlow, Caffe, and Theano. In this post I will consume a ready-made TensorFlow model from a SharePoint addin. I will not develop & train the network from scratch as this is a time consuming process and TensorFlow community already published some models for common practical problems. TensorFlow is a bit hard and verbose and there are nice abstractions that make it more approachable and we still have the option to develop our custom models if needed. But for our case here I would like to stand on the shoulders of some giants and make use of something tested and trained.
 
 So why do not we just use Azure ML or cognitive services vision API:
 
@@ -19,7 +18,7 @@ So why do not we just use Azure ML or cognitive services vision API:
 + An extra tiny benefit of using .NET on linux as we will see.
 
 ### Problem Description
-I like SharePoint search feature for office/PDF documents. You can just dump all your documents and then use search to spot the information you need. For other types of documents you need to add more metadata to the lists/libraries hosting them so that you can find/order them. So our problem is to extend SharePoint picture library to store some metadata(description) for stored images. This can be ideally a SharePoint event receiver that will listen for new images created in the library and add the predicted description to them automatically. I will implement a slightly different solution. We will have a SharePoint addin that will add and extra button in the ribbon to open a popup window. In this window, the current image selected will be shown and y clicking a button we will call a .net core web API hosted in Ubuntu VM which will use bash to call TensorFlow model and come back with a few expected descriptions. The user will have the option to pick one of them and apply it to a description column in the current picture library.
+I like SharePoint search feature for office/pdf documents. You can just dump all your documents and then use search to spot the information you need. For other types of documents you need to add more metadata to the lists/libraries hosting them so that you can find/order them. So our problem is to extend SharePoint picture library to store some metadata (description/caption) for stored images. This can be ideally a SharePoint event receiver that will listen for new images created in the library and add the predicted description to them automatically. I will implement a slightly different solution. We will have a SharePoint addin that will add and extra button to the ribbon to open a popup window. In this window, the current image selected will be shown and by clicking a button we will call a .net core web API hosted in Ubuntu VM which will use bash to call TensorFlow model and come back with a few expected descriptions. The user will have the option to pick one of them and apply it to a description column in the current picture library.
 
 
 
@@ -436,6 +435,7 @@ We have a file called `predictor.sh` as part of the web API which is also deploy
 ```
 
 So, just double check your environment paths and user name in case you have different values. This can be generated dynamically or controlled by some config settings but it should be good for our example. It simply does the bash script we did before to do the prediction but this time takes the image path as a parameter. Please also verify that this **.sh** file has execute permissions on the VM just in case.
+Also when you clone that repo locally, review the line endings for that file just in case they are converted to CR+LF as Ubuntu will not be happy with anything other than LF only.
 
 Then once we have the prediction text from the bash script process we can just do some text parsing and return it as an array of expected descriptions.
 

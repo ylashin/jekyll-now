@@ -24,7 +24,7 @@ If you would like to have a sneak peek on the final outcome, it should be as fol
 
 
 <div>
- <video width="480" height="360" controls preload="true">
+ <video style="max-width:100%" controls preload="true">
   <source src="/images/2017-01-26/caption.mp4" >  
  </video>
 </div>
@@ -515,9 +515,6 @@ For now we have SharePoint addin deployed to Office 365 developer site that cont
 - Now if you wait a few minutes and search for one of the keywords of the caption selected for that image, you should get the image back as part of the search result even if the image file name does not contain the keyword. We have successfully created image searchable metadata using TensorFlow.
 
 ![search.png](/images/2017-01-26/search.png)
-
-
-[<img src="/images/2017-01-26/search.png">](/images/2017-01-26/search.png)
 
 ### Other ideas/ Troubleshooting tips
 
